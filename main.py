@@ -11,10 +11,18 @@ from deap import creator
 from deap import tools
 from deap import gp
 
+MAX_TREE_DEPTH = 40
+POPULATION_SIZE = 1000
+CROSSOVER_RATE = 0.75
+MUTATION_RATE = 0.1
+NUM_OF_GENERATIONS = 100
+# How much samples from the data we will take at evaluate function
+SAMPLING_SIZE = 1000
 
 def get_data_set(filename):
     with open(filename) as data_file:
         data_reader = csv.reader(data_file)
+        # TODO - run on original test set (catch '?' character)
         data = list(list(float(elem) for elem in row) for row in data_reader)
     return data
 
@@ -46,6 +54,8 @@ with open("dataset/train.csv") as spambase:
     spam = list(list(float(elem) for elem in row) for row in spamReader)
 
 # defined a new primitive set for strongly typed GP
+# 120 floats for 4 features * 30 sampels
+# TODO - preprocessing the data - currenly it's treated as 120 length vector
 pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(float, 120), bool, "IN")
 
 # boolean operators
@@ -92,7 +102,7 @@ def evalSpambase(individual):
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     # Randomly sample 400 mails in the spam database
-    spam_samp = random.sample(spam, 1000)
+    spam_samp = random.sample(spam, SAMPLING_SIZE)
     # Evaluate the sum of correctly identified mail as spam
     result = sum(bool(func(*mail[1:])) is bool(mail[0]) for mail in spam_samp)
     return result,
@@ -103,12 +113,12 @@ toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
-toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=40))
-toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=40))
+toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=MAX_TREE_DEPTH))
+toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=MAX_TREE_DEPTH))
 
 def main():
     random.seed(10)
-    pop = toolbox.population(n=1000)
+    pop = toolbox.population(n=POPULATION_SIZE)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", numpy.mean)
@@ -116,7 +126,8 @@ def main():
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
     
-    algorithms.eaSimple(pop, toolbox, 0.75, 0.7, 150, stats, halloffame=hof)
+    algorithms.eaSimple(pop, toolbox, CROSSOVER_RATE, MUTATION_RATE, NUM_OF_GENERATIONS, stats, halloffame=hof)
+    #TODO - increase hof size, and take the best of validation set
     best = hof[0]
 
     eval_dataset(best, 'dataset/validate.csv', True)
