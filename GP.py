@@ -71,7 +71,7 @@ pset.addPrimitive(operator.not_, [bool], bool)
 # Define a protected division function
 def protectedDiv(left, right):
     try: return left / right
-    except ZeroDivisionError: return 1
+    except ZeroDivisionError: return 0
 
 pset.addPrimitive(operator.add, [float,float], float)
 pset.addPrimitive(operator.sub, [float,float], float)
