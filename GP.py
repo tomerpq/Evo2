@@ -3,7 +3,10 @@ import operator
 import csv
 import itertools
 
+import Norm
 import numpy
+import FB
+import MainToExe
 
 from deap import algorithms
 from deap import base
@@ -23,8 +26,9 @@ def get_data_set(filename):
     with open(filename) as data_file:
         data_reader = csv.reader(data_file)
         # TODO - run on original test set (catch '?' character)
-        data = list(list(float(elem) for elem in row) for row in data_reader)
-    return data
+        dataBeforeNorm = list(list(float(elem) for elem in row) for row in data_reader)
+        dataNorm = Norm.normalization(dataBeforeNorm)
+    return dataNorm
 
 def eval_dataset(individual, filename, check=False):
     # Transform the tree expression in a callable function
@@ -42,12 +46,12 @@ def eval_dataset(individual, filename, check=False):
     if check:
         size = len(result)
         correct = sum(result[i] == data[i][0] for i in range(size))
-        print(f'got acc of {correct / size}')
+        print(f'got acc of {correct}/{size}')
     else:
         with open('output', 'w') as f:
             for x in result:
                 f.write(str(int(x)) + '\n')
-    return result,
+    return result
 
 with open("dataset/train.csv") as spambase:
     spamReader = csv.reader(spambase)
@@ -73,6 +77,9 @@ pset.addPrimitive(operator.add, [float,float], float)
 pset.addPrimitive(operator.sub, [float,float], float)
 pset.addPrimitive(operator.mul, [float,float], float)
 pset.addPrimitive(protectedDiv, [float,float], float)
+pset.addPrimitive(operator.neg, 1)
+# pset.addPrimitive(numpy.cos, 1)
+# pset.addPrimitive(numpy.sin, 1)
 
 # logic operators
 # Define a new if-then-else function
@@ -126,13 +133,13 @@ def main():
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
     
-    algorithms.eaSimple(pop, toolbox, CROSSOVER_RATE, MUTATION_RATE, NUM_OF_GENERATIONS, stats, halloffame=hof)
+    pop, log = algorithms.eaSimple(pop, toolbox, CROSSOVER_RATE, MUTATION_RATE, NUM_OF_GENERATIONS, stats, halloffame=hof)
     #TODO - increase hof size, and take the best of validation set
     best = hof[0]
 
     eval_dataset(best, 'dataset/validate.csv', True)
     eval_dataset(best, 'dataset/testNoLabels.csv', False)
-    return pop, stats, hof
+    return pop, log, stats, hof
 
 if __name__ == "__main__":
     main()
