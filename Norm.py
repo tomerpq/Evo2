@@ -10,6 +10,7 @@ COL3_SD = 15184.67272
 COL4_AVG = 100.0187626
 COL4_SD = 0.065
 
+
 # standard normalization
 def normalization(data, deepnessRows=700000):
     new_data = []
@@ -18,6 +19,7 @@ def normalization(data, deepnessRows=700000):
         for j in range(len(data[0])):
             # skips the label
             if j == 0:
+                new_data[i][j] = data[i][j]
                 continue
             if j % 4 == 1:
                 new_data[i][j] = (data[i][j] - COL1_AVG) / COL1_SD
