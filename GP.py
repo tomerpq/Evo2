@@ -22,6 +22,7 @@ NUM_OF_GENERATIONS = 100
 # How much samples from the data we will take at evaluate function
 SAMPLING_SIZE = 1000
 
+
 def get_data_set(filename):
     with open(filename) as data_file:
         data_reader = csv.reader(data_file)
@@ -29,6 +30,7 @@ def get_data_set(filename):
         dataBeforeNorm = list(list(float(elem) for elem in row) for row in data_reader)
         dataNorm = Norm.normalization(dataBeforeNorm)
     return dataNorm
+
 
 def eval_dataset(individual, filename, check=False):
     # Transform the tree expression in a callable function
@@ -53,6 +55,7 @@ def eval_dataset(individual, filename, check=False):
                 f.write(str(int(x)) + '\n')
     return result
 
+
 with open("dataset/train.csv") as spambase:
     spamReader = csv.reader(spambase)
     spam = list(list(float(elem) for elem in row) for row in spamReader)
@@ -67,25 +70,29 @@ pset.addPrimitive(operator.and_, [bool, bool], bool)
 pset.addPrimitive(operator.or_, [bool, bool], bool)
 pset.addPrimitive(operator.not_, [bool], bool)
 
+
 # floating point operators
 # Define a protected division function
 def protectedDiv(left, right):
     try: return left / right
     except ZeroDivisionError: return 0
 
+
 pset.addPrimitive(operator.add, [float,float], float)
 pset.addPrimitive(operator.sub, [float,float], float)
 pset.addPrimitive(operator.mul, [float,float], float)
 pset.addPrimitive(protectedDiv, [float,float], float)
-pset.addPrimitive(operator.neg, 1)
+pset.addPrimitive(operator.neg, float, float)
 # pset.addPrimitive(numpy.cos, 1)
 # pset.addPrimitive(numpy.sin, 1)
+
 
 # logic operators
 # Define a new if-then-else function
 def if_then_else(input, output1, output2):
     if input: return output1
     else: return output2
+
 
 pset.addPrimitive(operator.lt, [float, float], bool)
 pset.addPrimitive(operator.eq, [float, float], bool)
@@ -105,6 +112,7 @@ toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.ex
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
+
 def evalSpambase(individual):
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
@@ -113,7 +121,8 @@ def evalSpambase(individual):
     # Evaluate the sum of correctly identified mail as spam
     result = sum(bool(func(*mail[1:])) is bool(mail[0]) for mail in spam_samp)
     return result,
-    
+
+
 toolbox.register("evaluate", evalSpambase)
 toolbox.register("select", tools.selTournament, tournsize=3)
 toolbox.register("mate", gp.cxOnePoint)
@@ -122,6 +131,7 @@ toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=MAX_TREE_DEPTH))
 toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=MAX_TREE_DEPTH))
+
 
 def main():
     random.seed(10)
@@ -140,6 +150,7 @@ def main():
     eval_dataset(best, 'dataset/validate.csv', True)
     eval_dataset(best, 'dataset/testNoLabels.csv', False)
     return pop, log, stats, hof
+
 
 if __name__ == "__main__":
     main()
