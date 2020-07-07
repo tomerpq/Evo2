@@ -64,12 +64,3 @@ def min_max_normalization(data, deepnessRows=700000):
                         max_arr[j - 1] - min_arr[j - 1])
 
     return new_data
-
-
-if __name__ == "__main__":
-    with open("dataset/train.csv") as data_file:
-        data_reader = csv.reader(data_file)
-        dataBeforeNorm = list(
-            list(float(elem) for elem in row) for row in data_reader)
-        # normalization(dataBeforeNorm)
-        min_max_normalization(dataBeforeNorm, 100)
