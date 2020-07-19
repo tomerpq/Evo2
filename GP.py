@@ -2,10 +2,11 @@ import random
 import operator
 import csv
 import itertools
+import base64
+import cloudpickle
 
 import Norm
 import numpy
-import MainToExe
 
 from deap import algorithms
 from deap import base
@@ -19,7 +20,7 @@ MAX_TREE_DEPTH = 40
 POPULATION_SIZE = 1000
 CROSSOVER_RATE = 0.75
 MUTATION_RATE = 0.1
-NUM_OF_GENERATIONS = 100
+NUM_OF_GENERATIONS = 5 # 100
 SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate function
 
 #work on the MainToExe file so it contains func saved in data
@@ -41,9 +42,20 @@ def get_data_set(filename, deepnessRows):
         dataNorm = Norm.normalization(dataBeforeNorm, deepnessRows)
     return dataNorm
 
+
+def lambda2str(exp):
+    b = cloudpickle.dumps(exp)
+    s = base64.b64encode(b).decode()
+    return s
+
+
 def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False):
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
+    # save lambda expression to local file
+    file = open("function.txt", "w")
+    file.write(lambda2str(func))
+    file.close()
     data = get_data_set(filename, deepnessRows)
     # Evaluate labels
     if len(data[0]) == 121:
@@ -95,7 +107,7 @@ def evalSpambase(individual):
     spam_samp = random.sample(spam, SAMPLING_SIZE)
     # Evaluate the sum of correctly identified mail as spam
     result = sum(bool(func(*mail[1:])) is bool(mail[0]) for mail in spam_samp)
-    eval_dataset_ValidateOrTest(individual, 'dataset/validate.csv', 50, True)
+    # eval_dataset_ValidateOrTest(individual, 'dataset/validate.csv', 50, True)
     return result,
 
 # Define a protected division function
@@ -173,7 +185,7 @@ def main():
     best = hof[0]
 
     eval_dataset_ValidateOrTest(best, 'dataset/validate.csv', 50, True)
-    eval_dataset_ValidateOrTest(best, 'dataset/test.csv', 50, False)
+    # eval_dataset_ValidateOrTest(best, 'dataset/test.csv', 50, False)
     return pop, log, stats, hof
 
 
