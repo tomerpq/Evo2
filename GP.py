@@ -2,7 +2,7 @@ import random
 import operator
 import csv
 import itertools
-
+import math
 import Norm
 import numpy
 import MainToExe
@@ -19,7 +19,7 @@ MAX_TREE_DEPTH = 40
 POPULATION_SIZE = 1000
 CROSSOVER_RATE = 0.75
 MUTATION_RATE = 0.1
-NUM_OF_GENERATIONS = 100
+NUM_OF_GENERATIONS = 2
 SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate function
 
 #work on the MainToExe file so it contains func saved in data
@@ -29,16 +29,37 @@ SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate f
 #and output filename given TODO
 
 
+
 def get_data_set(filename, deepnessRows):
     with open(filename) as data_file:
         data_reader = csv.reader(data_file)
         dataBeforeNorm = []
-        for i in range(deepnessRows):
+        for i in range(deepnessRows):F
             row = data_reader.__next__()
-            if(filename == "test.csv"):
+            if (filename == "test.csv"):
                 row[0] = 2
             dataBeforeNorm.append(list(float(elem) for elem in row))
-        dataNorm = Norm.normalization(dataBeforeNorm, deepnessRows)
+        if(filename == 'dataset/train.csv'):
+            with open('dataset/trainNormal.csv', mode='w', newline='\n') as new_file:
+                employee_writer = csv.writer(new_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                z = 0
+                tmp = []
+                while (1):
+                    if (z == 700000):
+                        break
+                    for i in range(z,z+25000):
+                        if(i % 25000 == 0):
+                            print(f'firsti = {i}')
+                        tmp.append(dataBeforeNorm[i])
+                    dataNorm = Norm.normalization2(tmp, deepnessRows)
+                    tmp = []
+                    employee_writer.writerows(dataNorm)
+                    z = z + 25000
+            return
+        elif(filename != 'dataset/trainNormal.csv'):
+            dataNorm = Norm.normalization(dataBeforeNorm, deepnessRows)
+        else:
+            dataNorm = dataBeforeNorm
     return dataNorm
 
 def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False):
@@ -73,7 +94,7 @@ def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False)
         precision = (TP)/(TP + FP)
         recall = (TP)/(TP + FN)
         beta = 0.25
-        betaPowed = pow(beta,2)
+        betaPowed = math.pow(beta,2)
         fb = (1 + betaPowed)*((precision * recall)/((betaPowed * precision) + recall))
         print(f'Accuracy = {accuracy}\nPrecision = {precision}\n'
               f'Recall = {recall}\n'
@@ -88,14 +109,13 @@ def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False)
     return result
 
 def evalSpambase(individual):
-    spam = get_data_set('dataset/train.csv', TRAIN_ROWS)
+    spam = get_data_set('dataset/trainNormal.csv', TRAIN_ROWS)
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     # Randomly sample SAMPLING_SIZE mails in the spam database
     spam_samp = random.sample(spam, SAMPLING_SIZE)
     # Evaluate the sum of correctly identified mail as spam
     result = sum(bool(func(*mail[1:])) is bool(mail[0]) for mail in spam_samp)
-    eval_dataset_ValidateOrTest(individual, 'dataset/validate.csv', 50, True)
     return result,
 
 # Define a protected division function
@@ -159,6 +179,8 @@ toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max
 
 
 def main():
+    get_data_set('dataset/train.csv',700000)
+    return
     random.seed(10)
     pop = toolbox.population(n=POPULATION_SIZE)
     hof = tools.HallOfFame(1)
@@ -172,8 +194,8 @@ def main():
     #TODO - increase hof size, and take the best of validation set
     best = hof[0]
 
-    eval_dataset_ValidateOrTest(best, 'dataset/validate.csv', 50, True)
-    eval_dataset_ValidateOrTest(best, 'dataset/test.csv', 50, False)
+    eval_dataset_ValidateOrTest(best, 'dataset/validate.csv', 50000, True)
+    eval_dataset_ValidateOrTest(best, 'dataset/test.csv', 50000, False)
     return pop, log, stats, hof
 
 
