@@ -3,9 +3,11 @@ import operator
 import csv
 import itertools
 import math
+import base64
+import cloudpickle
+
 import Norm
 import numpy
-import MainToExe
 
 from deap import algorithms
 from deap import base
@@ -19,7 +21,7 @@ MAX_TREE_DEPTH = 40
 POPULATION_SIZE = 1000
 CROSSOVER_RATE = 0.75
 MUTATION_RATE = 0.1
-NUM_OF_GENERATIONS = 2
+NUM_OF_GENERATIONS = 5 # 100
 SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate function
 
 #work on the MainToExe file so it contains func saved in data
@@ -34,7 +36,7 @@ def get_data_set(filename, deepnessRows):
     with open(filename) as data_file:
         data_reader = csv.reader(data_file)
         dataBeforeNorm = []
-        for i in range(deepnessRows):F
+        for i in range(deepnessRows):
             row = data_reader.__next__()
             if (filename == "test.csv"):
                 row[0] = 2
@@ -62,9 +64,20 @@ def get_data_set(filename, deepnessRows):
             dataNorm = dataBeforeNorm
     return dataNorm
 
+
+def lambda2str(exp):
+    b = cloudpickle.dumps(exp)
+    s = base64.b64encode(b).decode()
+    return s
+
+
 def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False):
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
+    # save lambda expression to local file
+    file = open("function.txt", "w")
+    file.write(lambda2str(func))
+    file.close()
     data = get_data_set(filename, deepnessRows)
     # Evaluate labels
     if len(data[0]) == 121:
