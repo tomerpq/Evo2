@@ -1,3 +1,6 @@
+#Tomer Paz 315311365
+#Topaz Tcherkafs 206867871
+
 import random
 import operator
 import csv
@@ -5,7 +8,6 @@ import itertools
 import math
 import base64
 import cloudpickle
-
 import Norm
 import numpy
 
@@ -15,21 +17,13 @@ from deap import creator
 from deap import tools
 from deap import gp
 
-TRAIN_ROWS = 1000
-
-MAX_TREE_DEPTH = 40
+TRAIN_ROWS = 50000
+MAX_TREE_DEPTH = 30
 POPULATION_SIZE = 1000
 CROSSOVER_RATE = 0.75
 MUTATION_RATE = 0.1
-NUM_OF_GENERATIONS = 5 # 100
+NUM_OF_GENERATIONS = 100 # 100
 SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate function
-
-#work on the MainToExe file so it contains func saved in data
-#and GP can update the func there alone + activate Exe for
-#prediction file output, and Exe will only output prediction file
-#with his func by getting input of file name
-#and output filename given TODO
-
 
 
 def get_data_set(filename, deepnessRows):
@@ -38,7 +32,7 @@ def get_data_set(filename, deepnessRows):
         dataBeforeNorm = []
         for i in range(deepnessRows):
             row = data_reader.__next__()
-            if (filename == "test.csv"):
+            if (filename == "dataset/test.csv"):
                 row[0] = 2
             dataBeforeNorm.append(list(float(elem) for elem in row))
         if(filename == 'dataset/train.csv'):
@@ -75,9 +69,6 @@ def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False)
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     # save lambda expression to local file
-    file = open("function.txt", "w")
-    file.write(lambda2str(func))
-    file.close()
     data = get_data_set(filename, deepnessRows)
     # Evaluate labels
     if len(data[0]) == 121:
@@ -119,6 +110,9 @@ def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False)
                 f.write(str(int(resI)))
                 if(i != (size -1)):
                     f.write('\n')
+        with open('dataset/function.txt', 'w') as file:
+            file.write(lambda2str(func))
+            print(f'New Function Available :)')
     return result
 
 def evalSpambase(individual):
@@ -145,7 +139,6 @@ def if_then_else(input, output1, output2):
 
 # defined a new primitive set for strongly typed GP
 # 120 floats for 4 features * 30 sampels
-# TODO - preprocessing the data - currenly it's treated as 120 length vector
 pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(float, 120), bool, "IN")
 
 # boolean operators
@@ -159,8 +152,8 @@ pset.addPrimitive(operator.sub, [float,float], float)
 pset.addPrimitive(operator.mul, [float,float], float)
 pset.addPrimitive(protectedDiv, [float,float], float)
 pset.addPrimitive(operator.neg, [float], float)
-# pset.addPrimitive(numpy.cos, 1) TODO - add?
-# pset.addPrimitive(numpy.sin, 1) TODO - add?
+pset.addPrimitive(numpy.cos, [float],float)
+pset.addPrimitive(numpy.sin, [float],float)
 
 # logic operators
 pset.addPrimitive(operator.lt, [float, float], bool)
@@ -192,8 +185,8 @@ toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max
 
 
 def main():
-    get_data_set('dataset/train.csv',700000)
-    return
+   # get_data_set('dataset/train.csv',700000)
+   # return
     random.seed(10)
     pop = toolbox.population(n=POPULATION_SIZE)
     hof = tools.HallOfFame(1)
@@ -204,7 +197,6 @@ def main():
     stats.register("max", numpy.max)
     
     pop, log = algorithms.eaSimple(pop, toolbox, CROSSOVER_RATE, MUTATION_RATE, NUM_OF_GENERATIONS, stats, halloffame=hof)
-    #TODO - increase hof size, and take the best of validation set
     best = hof[0]
 
     eval_dataset_ValidateOrTest(best, 'dataset/validate.csv', 50000, True)

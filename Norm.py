@@ -1,3 +1,6 @@
+#Tomer Paz 315311365
+#Topaz Tcherkafs 206867871
+
 import csv
 import math
 
