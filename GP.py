@@ -17,13 +17,16 @@ from deap import creator
 from deap import tools
 from deap import gp
 
-TRAIN_ROWS = 50000
-MAX_TREE_DEPTH = 30
+global spamTrain
+global bestFunc
+
+TRAIN_ROWS = 100000
+MAX_TREE_DEPTH = 40
 POPULATION_SIZE = 1000
 CROSSOVER_RATE = 0.75
 MUTATION_RATE = 0.1
-NUM_OF_GENERATIONS = 100 # 100
-SAMPLING_SIZE = 1000 # How much samples from the data we will take at evaluate function
+NUM_OF_GENERATIONS = 500
+SAMPLING_SIZE = 75000 # How much samples from the data we will take at evaluate function
 
 
 def get_data_set(filename, deepnessRows):
@@ -37,7 +40,7 @@ def get_data_set(filename, deepnessRows):
             dataBeforeNorm.append(list(float(elem) for elem in row))
         if(filename == 'dataset/train.csv'):
             with open('dataset/trainNormal.csv', mode='w', newline='\n') as new_file:
-                employee_writer = csv.writer(new_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer = csv.writer(new_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 z = 0
                 tmp = []
                 while (1):
@@ -49,7 +52,7 @@ def get_data_set(filename, deepnessRows):
                         tmp.append(dataBeforeNorm[i])
                     dataNorm = Norm.normalization2(tmp, deepnessRows)
                     tmp = []
-                    employee_writer.writerows(dataNorm)
+                    writer.writerows(dataNorm)
                     z = z + 25000
             return
         elif(filename != 'dataset/trainNormal.csv'):
@@ -67,12 +70,14 @@ def lambda2str(exp):
 
 def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False):
     # Transform the tree expression in a callable function
-    func = toolbox.compile(expr=individual)
-    # save lambda expression to local file
+    global bestFunc
+    func = bestFunc
+    #func = toolbox.compile(expr=individual)
     data = get_data_set(filename, deepnessRows)
     # Evaluate labels
     if len(data[0]) == 121:
         result = [bool(func(*mail[1:])) for mail in data]
+        print(f'{result}')
     else:
         raise(f'enexpected length! {len(data[0])}')
 
@@ -116,13 +121,15 @@ def eval_dataset_ValidateOrTest(individual, filename, deepnessRows, check=False)
     return result
 
 def evalSpambase(individual):
-    spam = get_data_set('dataset/trainNormal.csv', TRAIN_ROWS)
+    global spamTrain
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     # Randomly sample SAMPLING_SIZE mails in the spam database
-    spam_samp = random.sample(spam, SAMPLING_SIZE)
+    spam_samp = random.sample(spamTrain, SAMPLING_SIZE)
     # Evaluate the sum of correctly identified mail as spam
     result = sum(bool(func(*mail[1:])) is bool(mail[0]) for mail in spam_samp)
+    global bestFunc
+    bestFunc = func
     return result,
 
 # Define a protected division function
@@ -154,6 +161,7 @@ pset.addPrimitive(protectedDiv, [float,float], float)
 pset.addPrimitive(operator.neg, [float], float)
 pset.addPrimitive(numpy.cos, [float],float)
 pset.addPrimitive(numpy.sin, [float],float)
+
 
 # logic operators
 pset.addPrimitive(operator.lt, [float, float], bool)
@@ -188,6 +196,8 @@ def main():
    # get_data_set('dataset/train.csv',700000)
    # return
     random.seed(10)
+    global spamTrain
+    spamTrain = get_data_set('dataset/trainNormal.csv', TRAIN_ROWS)
     pop = toolbox.population(n=POPULATION_SIZE)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -198,7 +208,6 @@ def main():
     
     pop, log = algorithms.eaSimple(pop, toolbox, CROSSOVER_RATE, MUTATION_RATE, NUM_OF_GENERATIONS, stats, halloffame=hof)
     best = hof[0]
-
     eval_dataset_ValidateOrTest(best, 'dataset/validate.csv', 50000, True)
     eval_dataset_ValidateOrTest(best, 'dataset/test.csv', 50000, False)
     return pop, log, stats, hof
